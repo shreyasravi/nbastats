@@ -58,15 +58,21 @@ def import_game(filename):
 		if row['points']:
 			points = row['points']
 		else: 
-			if 'free throw' in row['etype'] and 'made' in row['result']:
+			if 'free throw' == row['etype'] and 'made' == row['result']:
 				points = 1
 			else:
 				points = 0
 		minutes, seconds = int(row['time'].split(':')[0]), int(row['time'].split(':')[1])
-		print(minutes, seconds)
+		if row['num']:
+			number=row['num']
+		else:
+			number = None
 		play, created = models.Play.objects.get_or_create(game=game, team=team,
 												   period=period, points=points,
-												   time=datetime.timedelta(minutes=minutes, seconds=seconds))
+												   time=datetime.timedelta(
+																minutes=minutes, 
+																seconds=seconds),
+												   number=number)
 		play.home_5.add(h1, h2, h3, h4, h5)
 		play.away_5.add(a1, a2, a3, a4, a5)
 		play.save()
