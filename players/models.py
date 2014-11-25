@@ -79,9 +79,9 @@ class Game(models.Model):
 	def _score(self, team):
 		points = 0
 		for play in self.play_set.all():
-			if play.team.name == team.name:
-				print(play.points, play.period)
-				points = points + play.points
+			if hasattr(play, 'shot') == True:
+				if play.shot.team == team:
+					points = points + play.shot.points
 		return points
 	
 	def away_score(self):
@@ -89,6 +89,9 @@ class Game(models.Model):
 
 	def home_score(self):
 		return self._score(self.home_team)
+	
+	def __str__(self):
+		return '%s @ %s, %s' % (self.away_team, self.home_team, self.date.date())
 		
 class Player(models.Model):
 	
@@ -96,7 +99,62 @@ class Player(models.Model):
 	last_name = models.CharField(max_length=15)
 	team = models.ForeignKey('Team')
 	
+	def plus_minus(self, games, teammates=None, opponents=None):
+		differential = 0
+		for game in games:
+			for play in game.play_set.all():
+				if self in play.away_5.all() or self in play.home_5.all():
+					if hasattr(play,'shot') == True:
+						if play.shot.team == self.team:
+							differential = differential + play.shot.points
+						else:
+							differential = differential - play.shot.points
+				#		print(play.shot.points, differential, play.shot.type)
+		return differential
+	
+	def ppg(self, games=None):
+		points = 0
+		if games:
+			games = games
+		else:
+			games = Game.objects.all()
+		for game in games:
+			for shot in self.shooter.filter(play__game=game):
+				points = shot.points + points
+		return points
+	
+	def apg(self, games=None):
+		assists = 0
+		if games:
+			games = games
+		else:
+			games = Game.objects.all()
+		for game in games:
+			for assist in self.assist.filter(play__game=game):
+				assists += 1
+		return assists
+		
+	def spg(self, games=None):
+		steals = 0
+		if games:
+			games = games
+		else:
+			games = Game.objects.all()
+		for game in games:
+			for steal in self.steal.filter(play__game=game):
+				steals += 1
+		return steals
+	
+
+
+	def __str__(self):
+		return '%s %s' % (self.first_name, self.last_name)
+	
+	
+	
 class Team(models.Model):
 	TEAM_CHOICES = (('BRO', 'Brooklyn Nets'), ('CHA', 'Charlotte Bobcats'))
 	name = models.CharField(max_length=3, choices=TEAM_CHOICES)
+	def __str__(self):
+		return '%s' % (self.get_name_display())
 	 
